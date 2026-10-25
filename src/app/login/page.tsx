@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LogoMark } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -8,6 +8,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState('');
+  const [linkError, setLinkError] = useState('');
+
+  // Supabase reports a failed email link in the query or in the hash.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search + '&' + window.location.hash.slice(1));
+    const code = params.get('error_code');
+    if (!code) return;
+    setLinkError(
+      code === 'otp_expired'
+        ? 'Посилання для входу протерміноване або вже використане. Надішли нове й відкрий його одразу.'
+        : 'Не вдалося увійти за посиланням. Надішли нове.',
+    );
+    window.history.replaceState(null, '', '/login');
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +48,7 @@ export default function LoginPage() {
           <p role="status" className="rounded-2xl bg-ink-2 p-5 text-center leading-relaxed">Посилання для входу надіслано на <b>{email}</b>. Відкрий лист на цьому пристрої.</p>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-3">
+            {linkError && <p role="alert" className="rounded-xl bg-[#3a2a12] p-3 text-sm leading-relaxed text-[#ffd9a8]">{linkError}</p>}
             <label className="flex flex-col gap-2 text-sm text-dim-2">Email
               <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="h-12 rounded-xl border border-ink-3 bg-ink-2 px-4 text-base text-white" />

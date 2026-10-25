@@ -9,5 +9,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}/`);
   }
-  return NextResponse.redirect(`${origin}/login`);
+  // Pass Supabase's error (e.g. an expired link) on to the login page so it can explain it.
+  const err = searchParams.get('error_code') ?? (code ? 'exchange_failed' : searchParams.get('error'));
+  return NextResponse.redirect(`${origin}/login${err ? `?error_code=${encodeURIComponent(err)}` : ''}`);
 }
