@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Askeza
 
-## Getting Started
+Особиста панель дисципліни: план дня, звички, фокус-сесії, «Цілі 2027» і рівні, які поступово відкривають нові цілі, тренування, місії та навички.
 
-First, run the development server:
+Стек: Next.js 15 (App Router, Server Actions) · Supabase (Auth, Postgres, RLS) · Tailwind CSS 4 · PWA.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Як працюють рівні
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Логіка — у `src/lib/game/` і покрита тестами (`npm test`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `levels.ts` — 10 рівнів у 4 фазах: що кожен відкриває, його місії та умови переходу.
+- `engine.ts` — чисті функції: умови переходу, підвищення, зниження, повернення.
+- Перехід на новий рівень потребує **всіх** умов: XP, усі місії поточного рівня, регулярність (N активних днів на тиждень M тижнів поспіль) і результат (наприклад, Reels у середньому ≤ 20 хв на день).
+- Рівень знижується на один лише після 2 повних тижнів поспіль, коли було менше 3 активних днів, і не раніше ніж через 2 тижні після попередньої зміни.
+- Відкриті функції залежать від `max_level` (найвищого досягнутого рівня), тому після зниження нічого не зникає.
+- Після зниження вмикається режим повернення: 3 місії, і рівень повертається без повторного набору XP.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+XP ведеться як журнал `xp_events` з унікальним `(source, ref)`. Тому кожна нагорода ідемпотентна, а скасування справи забирає саме її бали.
 
-## Learn More
+## Запуск
 
-To learn more about Next.js, take a look at the following resources:
+1. Створи проєкт у [Supabase](https://supabase.com) і виконай `supabase/migrations/0001_init.sql` у SQL Editor (або `supabase db push`).
+2. У Supabase → Authentication → URL Configuration додай адресу сайту і `…/auth/callback` у Redirect URLs.
+3. Скопіюй `.env.example` у `.env.local` і заповни `NEXT_PUBLIC_SUPABASE_URL` та `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. `npm install && npm run dev` і відкрий http://localhost:3000.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Вхід — за посиланням на email. Новий акаунт отримує стартові звички, три цілі розвитку з етапами та кілька вражень.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Деплой
 
-## Deploy on Vercel
+Vercel: імпортуй репозиторій, додай ті самі дві змінні середовища, задеплой. На телефоні відкрий сайт і обери «Додати на головний екран».
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Далі
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- ІІ-коуч: щотижневий огляд даних і пропозиції «додати / прибрати / змінити» (дизайн уже є в канвасі).
+- Автоматичний підрахунок частини місій із даних замість ручного «+1».
+- Статистика і профіль з налаштуваннями.
