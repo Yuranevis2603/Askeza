@@ -179,3 +179,6 @@ create function public.xp_total() returns int
 language sql stable security invoker set search_path = '' as $$
   select coalesce(sum(amount), 0)::int from public.xp_events where user_id = (select auth.uid());
 $$;
+
+-- The trigger function must never be callable over the API.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
