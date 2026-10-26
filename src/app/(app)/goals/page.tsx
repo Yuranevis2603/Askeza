@@ -1,7 +1,7 @@
 import { addImpression, deleteImpression, planNextAction, setGoalValue, setNextAction, toggleStep } from '@/app/actions';
 import { Icon } from '@/components/Icon';
 import { ImpressionStatus } from '@/components/ImpressionStatus';
-import { AREA, Bar } from '@/components/ui';
+import { AREA, Bar, Card } from '@/components/ui';
 import { getCtx, loadGame, must } from '@/lib/game/server';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ type Goal = {
 type Step = { id: string; goal_id: string; title: string; done: boolean; unlock_level: number | null; due: string | null };
 
 const STATUS_LABEL: Record<string, string> = { idea: 'Ідея', planned: 'Заплановано', prep: 'Готуюся', done: 'Виконано' };
+const input = 'h-10 min-w-0 flex-1 rounded-lg bg-paper px-3 text-sm';
 
 export default async function GoalsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const ctx = await getCtx();
@@ -32,145 +33,129 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const counts = Object.fromEntries(Object.keys(STATUS_LABEL).map((k) => [k, imps.filter((i) => i.status === k).length]));
 
   return (
-    <>
-      <header>
-        <p className="mb-1.5 text-sm font-medium text-muted">Рік, коли система працює на тебе</p>
-        <h1 className="font-display text-[28px] font-semibold tracking-tight sm:text-[34px]">Цілі 2027</h1>
-      </header>
+    <div className="mx-auto flex w-full max-w-[680px] flex-col gap-4">
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Цілі 2027</h1>
 
-      <section aria-labelledby="dev-h" className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="dev-h" className="font-display text-[22px] font-semibold">1 · Розвиток</h2>
-          <p className="text-sm text-body">Три довгі цілі. Нові етапи відкриваються разом із рівнями.</p>
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-5">
-          {dev.map((g) => {
-            const a = AREA[g.area ?? 'focus'];
-            const locked = (g.unlock_level ?? 1) > player.maxLevel;
-            const value = g.area === 'instagram' ? stats.metrics.followers ?? g.current_value ?? 0 : g.current_value ?? 0;
-            const target = g.target_value ?? 100;
-            const pct = (Number(value) / Number(target)) * 100;
-            const gs = steps.filter((s) => s.goal_id === g.id);
-            const currentIdx = gs.findIndex((s) => !s.done && !((s.unlock_level ?? 0) > player.maxLevel));
+      <section aria-labelledby="dev-h" className="flex flex-col gap-3">
+        <h2 id="dev-h" className="text-sm font-bold uppercase tracking-wider text-muted">Розвиток</h2>
+        {dev.map((g) => {
+          const a = AREA[g.area ?? 'focus'];
+          const locked = (g.unlock_level ?? 1) > player.maxLevel;
+          if (locked) {
             return (
-              <article key={g.id} aria-label={g.title} className={`flex flex-col gap-4 rounded-[20px] border p-6 ${locked ? 'border-dashed border-[#cfcac1] bg-soft' : 'border-line bg-white'}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[13px] font-semibold ${a.tint} ${a.ink}`}><span className={`h-2 w-2 rounded-full ${a.dot}`} />{a.name}</span>
-                  <span className="text-xs text-muted">{locked ? `відкриється на рівні ${g.unlock_level}` : `відкрито на рівні ${g.unlock_level}`}</span>
+              <div key={g.id} className="flex items-center gap-3 rounded-2xl border border-dashed border-[#cfcac1] bg-soft px-4 py-3">
+                <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-line-2 text-[#6e6a62]"><Icon name="lock" size={16} /></span>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[15px] font-semibold">{g.title}</span>
+                  <span className="text-xs text-muted">Відкриється на рівні {g.unlock_level}</span>
                 </div>
-                <h3 className="text-xl font-bold leading-tight">{g.title}</h3>
-                {locked ? (
-                  <p className="flex items-start gap-2 text-sm leading-relaxed text-body"><Icon name="lock" size={16} className="mt-0.5 flex-none" />Ця ціль чекає на тебе. Спершу збудуй фундамент: фокус, менше скролингу, регулярність. Так вона не стане ще одним кинутим планом.</p>
-                ) : (
-                  <>
-                    <div className="flex items-baseline gap-2">
-                      <span className="num font-display text-[40px] font-semibold tracking-tight">{g.unit === '%' ? `${Math.round(Number(value))}%` : Number(value).toLocaleString('uk-UA')}</span>
-                      <span className="num text-[15px] text-muted">{g.unit === '%' ? 'готовності' : `/ ${Number(target).toLocaleString('uk-UA')}`}</span>
-                    </div>
-                    <Bar pct={pct} color={a.bar} h="h-2.5" />
-                    <details className="text-sm">
-                      <summary className="cursor-pointer text-[13px] font-semibold text-muted">Оновити прогрес</summary>
-                      <form action={setGoalValue} className="mt-2 flex gap-2">
-                        <input type="hidden" name="id" value={g.id} />
-                        <label className="sr-only" htmlFor={`v-${g.id}`}>Поточне значення</label>
-                        <input id={`v-${g.id}`} name="value" inputMode="numeric" defaultValue={Number(value)} className="h-11 flex-1 rounded-xl border border-[#cfcac1] px-3" />
-                        <button className="h-11 rounded-xl bg-ink px-4 font-semibold text-white">Зберегти</button>
-                      </form>
-                    </details>
-                  </>
-                )}
-                <div className="flex flex-col">
-                  <div className="mb-1 text-[13px] font-semibold text-muted">Етапи</div>
-                  {gs.map((s, i) => {
-                    const sl = (s.unlock_level ?? 0) > player.maxLevel;
-                    const cur = i === currentIdx && !locked;
-                    return (
-                      <form key={s.id} action={toggleStep.bind(null, s.id)}>
-                        <button disabled={sl || locked} aria-pressed={s.done} className="flex min-h-10 w-full items-center gap-3 text-left text-sm disabled:cursor-default">
-                          <span className={`grid h-6 w-6 flex-none place-items-center rounded-full ${s.done ? 'bg-ink text-volt' : sl ? 'bg-line-2 text-[#6e6a62]' : cur ? `border-[3px] border-current ${a.ink} text-transparent` : 'border-2 border-[#cfcac1] text-transparent'}`}>
-                            <Icon name={sl ? 'lock' : 'check'} size={12} stroke={sl ? 2.6 : 3.2} className={sl ? '' : s.done ? '' : 'opacity-0'} />
-                          </span>
-                          <span className={`flex-1 leading-snug ${cur ? 'font-bold' : s.done ? 'text-body' : 'text-muted'}`}>{s.title}</span>
-                          {sl ? <span className="flex-none rounded-full bg-line-2 px-2 py-0.5 text-xs font-semibold text-[#4d4a44]">з рівня {s.unlock_level}</span>
-                            : s.due && <span className="flex-none text-xs text-muted">{s.due}</span>}
-                        </button>
-                      </form>
-                    );
-                  })}
-                </div>
-                {!locked && (
-                  <div className="flex flex-col gap-2.5 rounded-2xl bg-soft p-4">
-                    <span className="text-xs font-semibold text-muted">Найближча дія</span>
-                    {g.next_action ? <span className="text-[15px] font-semibold leading-snug">{g.next_action}</span> : <span className="text-sm text-muted">Запиши один маленький крок.</span>}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      {g.next_action && (
-                        <form action={planNextAction.bind(null, g.id)}>
-                          <button className="h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white">Додати в план · +{g.next_action_xp ?? 20} XP</button>
-                        </form>
-                      )}
-                      <details className="text-sm">
-                        <summary className="cursor-pointer text-[13px] font-semibold text-muted">Змінити</summary>
-                        <form action={setNextAction} className="mt-2 flex gap-2">
-                          <input type="hidden" name="id" value={g.id} />
-                          <label className="sr-only" htmlFor={`n-${g.id}`}>Найближча дія</label>
-                          <input id={`n-${g.id}`} name="next_action" defaultValue={g.next_action ?? ''} maxLength={200} className="h-11 min-w-0 flex-1 rounded-xl border border-[#cfcac1] px-3" />
-                          <button className="h-11 rounded-xl border border-edge bg-white px-3 font-semibold">OK</button>
-                        </form>
-                      </details>
-                    </div>
-                  </div>
-                )}
-              </article>
+                <span className={`h-2.5 w-2.5 flex-none rounded-full ${a.dot}`} />
+              </div>
             );
-          })}
-        </div>
+          }
+          const value = Number(g.area === 'instagram' ? stats.metrics.followers ?? g.current_value ?? 0 : g.current_value ?? 0);
+          const target = Number(g.target_value ?? 100);
+          const gs = steps.filter((s) => s.goal_id === g.id);
+          const current = gs.find((s) => !s.done && !((s.unlock_level ?? 0) > player.maxLevel));
+          return (
+            <Card key={g.id} aria-label={g.title} className="flex flex-col gap-3 !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col">
+                  <span className={`text-xs font-semibold ${a.ink}`}>{a.name}</span>
+                  <h3 className="text-base font-bold leading-snug">{g.title}</h3>
+                </div>
+                <span className="num flex-none font-display text-xl font-semibold">
+                  {g.unit === '%' ? `${Math.round(value)}%` : value.toLocaleString('uk-UA')}
+                  {g.unit !== '%' && <span className="text-xs font-medium text-muted"> / {target.toLocaleString('uk-UA')}</span>}
+                </span>
+              </div>
+              <Bar pct={(value / target) * 100} color={a.bar} h="h-1.5" />
+              {current && <p className="text-sm text-body"><span className="text-muted">Етап:</span> <b className="font-semibold text-ink">{current.title}</b></p>}
+              {g.next_action && (
+                <div className="flex items-center gap-2 rounded-xl bg-soft p-2 pl-3">
+                  <span className="min-w-0 flex-1 text-sm leading-snug">{g.next_action}</span>
+                  <form action={planNextAction.bind(null, g.id)}>
+                    <button className="h-10 flex-none rounded-lg bg-ink px-3 text-xs font-bold text-white">У план +{g.next_action_xp ?? 20}</button>
+                  </form>
+                </div>
+              )}
+              <details className="group">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-muted group-open:mb-2">Етапи й редагування ▾</summary>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col">
+                    {gs.map((s) => {
+                      const sl = (s.unlock_level ?? 0) > player.maxLevel;
+                      return (
+                        <form key={s.id} action={toggleStep.bind(null, s.id)}>
+                          <button disabled={sl} aria-pressed={s.done} className="flex min-h-10 w-full items-center gap-2.5 text-left text-sm disabled:cursor-default">
+                            <span className={`grid h-5 w-5 flex-none place-items-center rounded-full ${s.done ? 'bg-ink text-volt' : sl ? 'bg-line-2 text-[#6e6a62]' : 'border-2 border-[#cfcac1] text-transparent'}`}>
+                              <Icon name={sl ? 'lock' : 'check'} size={11} stroke={3} />
+                            </span>
+                            <span className={`flex-1 ${s.done ? 'text-muted line-through' : sl ? 'text-muted' : ''}`}>{s.title}</span>
+                            <span className="flex-none text-xs text-muted">{sl ? `з рівня ${s.unlock_level}` : s.due}</span>
+                          </button>
+                        </form>
+                      );
+                    })}
+                  </div>
+                  <form action={setGoalValue} className="flex gap-2">
+                    <input type="hidden" name="id" value={g.id} />
+                    <label className="sr-only" htmlFor={`v-${g.id}`}>Прогрес</label>
+                    <input id={`v-${g.id}`} name="value" inputMode="numeric" defaultValue={value} className={input} />
+                    <button className="h-10 rounded-lg border border-edge px-3 text-xs font-semibold">Оновити прогрес</button>
+                  </form>
+                  <form action={setNextAction} className="flex gap-2">
+                    <input type="hidden" name="id" value={g.id} />
+                    <label className="sr-only" htmlFor={`n-${g.id}`}>Найближча дія</label>
+                    <input id={`n-${g.id}`} name="next_action" defaultValue={g.next_action ?? ''} maxLength={200} placeholder="Найближча дія" className={input} />
+                    <button className="h-10 rounded-lg border border-edge px-3 text-xs font-semibold">Зберегти</button>
+                  </form>
+                </div>
+              </details>
+            </Card>
+          );
+        })}
       </section>
 
-      <section aria-labelledby="imp-h" className="flex flex-col gap-5 rounded-3xl border border-line bg-white p-5 sm:p-7">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <h2 id="imp-h" className="font-display text-[22px] font-semibold">2 · Враження</h2>
-            <p className="text-sm text-body">Одноразові цілі в будь-якому порядку. Кожне виконане — +300 XP.</p>
-          </div>
-          <form action={addImpression} className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1.5 text-[13px] font-medium text-body">Нове враження
-              <input name="title" required maxLength={200} placeholder="Наприклад, дайвінг" className="h-12 w-[260px] max-w-full rounded-xl border border-[#cfcac1] px-3.5 text-[15px]" />
-            </label>
-            <button className="inline-flex h-12 items-center gap-2 rounded-xl bg-volt px-4 text-[15px] font-bold text-ink"><Icon name="plus" size={16} />Додати</button>
-          </form>
+      <section aria-labelledby="imp-h" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 id="imp-h" className="text-sm font-bold uppercase tracking-wider text-muted">Враження</h2>
+          <span className="num text-xs text-muted">{counts.done} з {imps.length} · +300 XP кожне</span>
         </div>
-        <nav aria-label="Фільтр за статусом" className="flex flex-wrap gap-2">
+        <form action={addImpression} className="flex gap-2">
+          <label className="sr-only" htmlFor="new-imp">Нове враження</label>
+          <input id="new-imp" name="title" required maxLength={200} placeholder="Додати враження…" className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-[15px]" />
+          <button aria-label="Додати враження" className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-volt text-ink"><Icon name="plus" size={18} /></button>
+        </form>
+        <nav aria-label="Фільтр за статусом" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
           {[['', 'Усі', imps.length], ...Object.entries(STATUS_LABEL).map(([k, l]) => [k, l, counts[k]])].map(([k, l, n]) => {
             const on = (filter ?? '') === k;
             return (
               <a key={String(k)} href={k ? `/goals?status=${k}#imp-h` : '/goals#imp-h'} aria-current={on ? 'true' : undefined}
-                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold ${on ? 'border-ink bg-ink text-white' : 'border-edge bg-white text-body'}`}>
+                className={`inline-flex h-9 flex-none items-center gap-1 rounded-full border px-3 text-xs font-semibold ${on ? 'border-ink bg-ink text-white' : 'border-edge bg-white text-body'}`}>
                 {l} <span className={`num ${on ? 'text-volt' : 'text-[#6e6a62]'}`}>{n}</span>
               </a>
             );
           })}
         </nav>
-        {shown.length === 0 && <p className="text-sm text-muted">Тут поки порожньо.</p>}
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3.5">
-          {shown.map((i) => (
-            <div key={i.id} className={`flex min-h-[140px] flex-col gap-3 rounded-[18px] border p-4 ${i.status === 'done' ? 'border-[#ebd65a] bg-[#fffbe0]' : 'border-line bg-white'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-1">
-                  <span className="text-base font-bold leading-tight">{i.title}</span>
-                  {i.note && <span className="text-[13px] text-[#4d4a44]">{i.note}</span>}
+        <Card className="!p-0">
+          {shown.length === 0 && <p className="p-4 text-sm text-muted">Тут поки порожньо.</p>}
+          <ul>
+            {shown.map((i) => (
+              <li key={i.id} className={`flex items-center gap-2 border-b border-line-2 px-4 py-2 last:border-b-0 ${i.status === 'done' ? 'bg-[#fffbe0]' : ''}`}>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className={`truncate text-[15px] font-semibold ${i.status === 'done' ? 'line-through decoration-1' : ''}`}>{i.title}</span>
+                  {i.note && <span className="truncate text-xs text-muted">{i.note}</span>}
                 </div>
-                <form action={deleteImpression.bind(null, i.id)}>
-                  <button aria-label={`Видалити: ${i.title}`} className="grid h-9 w-9 place-items-center text-[#8a857b] hover:text-ink"><Icon name="trash" size={16} /></button>
-                </form>
-              </div>
-              <div className="mt-auto flex items-center justify-between gap-2">
                 <ImpressionStatus id={i.id} status={i.status ?? 'idea'} />
-                <span className={`num text-xs font-bold ${i.status === 'done' ? '' : 'text-[#6e6a62]'}`}>{i.status === 'done' ? '+300 XP отримано' : '+300 XP'}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+                <form action={deleteImpression.bind(null, i.id)}>
+                  <button aria-label={`Видалити: ${i.title}`} className="grid h-10 w-8 place-items-center text-[#bdb8ae] hover:text-ink"><Icon name="trash" size={15} /></button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </section>
-    </>
+    </div>
   );
 }

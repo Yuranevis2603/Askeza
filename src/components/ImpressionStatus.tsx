@@ -13,10 +13,10 @@ const STYLE: Record<string, string> = {
 export function ImpressionStatus({ id, status }: { id: string; status: string }) {
   const [pending, start] = useTransition();
   return (
-    <label className="flex items-center gap-2 text-xs text-muted">
-      Статус
+    <label className="flex-none">
+      <span className="sr-only">Статус</span>
       <select value={status} disabled={pending} onChange={(e) => { const v = e.target.value; start(() => setImpressionStatus(id, v)); }}
-        className={`h-9 rounded-full border px-2.5 text-[13px] font-bold ${STYLE[status] ?? STYLE.idea}`}>
+        className={`h-9 rounded-full border px-2 text-xs font-bold ${STYLE[status] ?? STYLE.idea}`}>
         <option value="idea">Ідея</option>
         <option value="planned">Заплановано</option>
         <option value="prep">Готуюся</option>

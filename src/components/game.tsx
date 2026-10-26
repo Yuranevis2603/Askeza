@@ -41,29 +41,28 @@ export function CriteriaGrid({ criteria, compact = false }: { criteria: Criterio
 export function MissionList({ missions, progress, editable = true }: { missions: Mission[]; progress: Record<string, number>; editable?: boolean }) {
   if (!missions.length) return <p className="text-sm text-muted">На цьому рівні місій немає — створюй власні.</p>;
   return (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col">
       {missions.map((m) => {
         const p = progress[m.key] ?? 0;
         const done = p >= m.target;
         return (
-          <li key={m.key} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <span className={`text-sm font-semibold ${done ? 'text-muted line-through' : ''}`}>{m.title}</span>
-              <span className="num flex-none text-[13px] text-body">{p} з {m.target} · <b>+{m.reward} XP</b></span>
+          <li key={m.key} className="flex items-center gap-3 border-t border-line-2 py-2 first:border-t-0 first:pt-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className={`text-sm font-medium leading-snug ${done ? 'text-muted line-through' : ''}`}>{m.title}</span>
+                <span className="num flex-none text-xs text-muted">{p}/{m.target} · +{m.reward}</span>
+              </div>
+              <Bar pct={(p / m.target) * 100} color={done ? 'bg-volt' : 'bg-ink'} h="h-1.5" />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1"><Bar pct={(p / m.target) * 100} color={done ? 'bg-volt' : 'bg-ink'} /></div>
-              {editable && (
-                <>
-                  <form action={bumpMission.bind(null, m.key, -1)}>
-                    <button disabled={p === 0} aria-label={`Зменшити: ${m.title}`} className="grid h-11 w-11 place-items-center rounded-xl border border-edge bg-white disabled:opacity-40"><Icon name="minus" size={16} /></button>
-                  </form>
-                  <form action={bumpMission.bind(null, m.key, 1)}>
-                    <button disabled={done} aria-label={`Додати прогрес: ${m.title}`} className="grid h-11 w-11 place-items-center rounded-xl bg-ink text-white disabled:opacity-40"><Icon name="plus" size={16} /></button>
-                  </form>
-                </>
-              )}
-            </div>
+            {editable && (done ? (
+              <form action={bumpMission.bind(null, m.key, -1)}>
+                <button aria-label={`Скасувати: ${m.title}`} className="grid h-10 w-10 place-items-center rounded-xl bg-volt text-ink"><Icon name="check" size={16} stroke={3} /></button>
+              </form>
+            ) : (
+              <form action={bumpMission.bind(null, m.key, 1)}>
+                <button aria-label={`+1: ${m.title}`} className="grid h-10 w-10 place-items-center rounded-xl bg-ink text-white"><Icon name="plus" size={16} /></button>
+              </form>
+            ))}
           </li>
         );
       })}

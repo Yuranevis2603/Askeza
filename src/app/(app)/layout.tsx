@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2"><LogoMark size={30} /><span className="font-display text-lg font-bold">askeza</span></div>
           <Link href="/levels" aria-label={`Рівень ${row.level}`} className="grid h-9 w-9 place-items-center rounded-[11px] bg-volt font-display text-[15px] font-bold text-ink">{row.level}</Link>
         </header>
-        <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-4 pb-28 pt-5 sm:px-6 lg:px-10 lg:pb-14 lg:pt-8">{children}</main>
+        <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-4 px-4 pb-28 pt-4 sm:px-6 lg:px-10 lg:pb-14 lg:pt-8">{children}</main>
       </div>
       <BottomNav />
     </div>

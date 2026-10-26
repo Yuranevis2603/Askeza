@@ -44,23 +44,25 @@ export function FocusTimer({ sessionsToday }: { sessionsToday: number }) {
   const elapsed = LENGTH - left;
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5 text-[13px] font-medium text-body">
-        Над чим працюєш
-        <select value={area} onChange={(e) => setArea(e.target.value)} disabled={running} className="h-11 rounded-xl border border-edge bg-white px-3 text-[15px]">
-          {AREAS.map((a) => <option key={a.v} value={a.v}>{a.label}</option>)}
-        </select>
-      </label>
-      <div role="timer" className="num font-display text-6xl font-semibold leading-none tracking-tight">{mm}:{ss}</div>
-      <span className="num text-[13px] text-muted">{sessionsToday} сесій сьогодні · +20 XP за сесію від 15 хв</span>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={toggle} className="h-12 flex-1 rounded-[14px] bg-volt px-4 text-[15px] font-bold text-ink">
-          {running ? 'Пауза' : elapsed > 0 ? 'Продовжити' : 'Почати 25 хв'}
-        </button>
-        <button type="button" onClick={() => finish(elapsed)} disabled={elapsed < 60 || pending} className="h-12 rounded-[14px] border border-line bg-white px-4 text-sm font-semibold disabled:opacity-40">
-          {pending ? 'Зберігаю…' : 'Завершити'}
-        </button>
+    <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span role="timer" className="num font-display text-[28px] font-semibold leading-tight tracking-tight">{mm}:{ss}</span>
+        <label className="flex items-center gap-1 text-xs text-muted">
+          <span className="num">{sessionsToday} сьогодні ·</span>
+          <span className="sr-only">Над чим працюєш</span>
+          <select value={area} onChange={(e) => setArea(e.target.value)} disabled={running} className="-ml-1 bg-transparent font-semibold text-body">
+            {AREAS.map((a) => <option key={a.v} value={a.v}>{a.label}</option>)}
+          </select>
+        </label>
       </div>
+      {elapsed >= 60 && (
+        <button type="button" onClick={() => finish(elapsed)} disabled={pending} className="h-11 rounded-xl border border-line bg-white px-3 text-sm font-semibold disabled:opacity-40">
+          {pending ? '…' : 'Готово'}
+        </button>
+      )}
+      <button type="button" onClick={toggle} aria-label={running ? 'Пауза' : 'Почати фокус-сесію'} className="h-11 rounded-xl bg-volt px-4 text-sm font-bold text-ink">
+        {running ? 'Пауза' : elapsed > 0 ? 'Далі' : 'Старт'}
+      </button>
     </div>
   );
 }
