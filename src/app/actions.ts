@@ -196,3 +196,19 @@ export async function signOut() {
   await ctx.supabase.auth.signOut();
   redirect('/login');
 }
+
+// ---------- journal ----------
+
+export async function addJournal(form: FormData) {
+  const ctx = await getCtx();
+  const body = text(form.get('body'), 10000);
+  if (!body) return;
+  must(await ctx.supabase.from('journal_entries').insert({ user_id: ctx.userId, day: ctx.today, body }));
+  done();
+}
+
+export async function deleteJournal(id: string) {
+  const ctx = await getCtx();
+  must(await ctx.supabase.from('journal_entries').delete().eq('id', id));
+  done();
+}

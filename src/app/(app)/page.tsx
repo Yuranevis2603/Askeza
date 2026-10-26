@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { addTask, deleteTask, setMetric, toggleHabit, toggleTask } from '@/app/actions';
 import { FocusTimer } from '@/components/FocusTimer';
+import { JournalPrompt } from '@/components/JournalPrompt';
 import { EventBanner, MissionList } from '@/components/game';
 import { Icon } from '@/components/Icon';
 import { AREA, Bar, Card } from '@/components/ui';
@@ -24,6 +25,7 @@ export default async function TodayPage() {
     supabase.from('focus_sessions').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('day', today),
     xpToday(ctx),
   ]);
+  const wroteToday = must(await supabase.from('journal_entries').select('id').eq('user_id', userId).eq('day', today).limit(1)).length > 0;
   const taskList = must(tasks);
   const habitList = must(habits);
   const doneHabits = new Set(must(logs).map((l) => l.habit_id));
@@ -33,6 +35,7 @@ export default async function TodayPage() {
   const features = unlockedFeatures(player.maxLevel);
   const dayPct = Math.min(100, Math.round((xp / ctx.row.daily_goal) * 100));
   const doneTasks = taskList.filter((t) => t.done).length;
+  const allDone = taskList.length > 0 && doneTasks === taskList.length;
   const dateLabel = new Intl.DateTimeFormat('uk-UA', { weekday: 'long', day: 'numeric', month: 'long', timeZone: ctx.row.time_zone }).format(new Date());
 
   const levelLine = player.comeback
@@ -54,6 +57,7 @@ export default async function TodayPage() {
       </header>
 
       <EventBanner event={event} level={player.level} levelName={level.name} />
+      <JournalPrompt day={today} show={allDone && !wroteToday} />
 
       <Link href="/levels" aria-label="Прогрес дня і рівень" className="flex items-center gap-4 rounded-2xl bg-ink p-4 text-white">
         <div className="relative h-14 w-14 flex-none">
