@@ -212,3 +212,40 @@ export async function deleteJournal(id: string) {
   must(await ctx.supabase.from('journal_entries').delete().eq('id', id));
   done();
 }
+
+// ---------- trackers ----------
+
+/** UTC instant of local midnight on `day` in `timeZone`. */
+function zonedMidnight(day: string, timeZone: string): Date {
+  const guess = new Date(`${day}T00:00:00Z`);
+  const local = new Date(guess.toLocaleString('en-US', { timeZone }));
+  const utc = new Date(guess.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return new Date(guess.getTime() - (local.getTime() - utc.getTime()));
+}
+
+export async function addTracker(form: FormData) {
+  const ctx = await getCtx();
+  const name = text(form.get('name'), 80);
+  if (!name) return;
+  const since = text(form.get('since'), 10);
+  let started = new Date();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(since) && since <= ctx.today) started = zonedMidnight(since, ctx.row.time_zone);
+  must(await ctx.supabase.from('trackers').insert({ user_id: ctx.userId, name, started_at: started.toISOString() }));
+  done();
+}
+
+export async function resetTracker(id: string) {
+  const ctx = await getCtx();
+  const t = must(await ctx.supabase.from('trackers').select('started_at, best_seconds').eq('id', id).single());
+  const now = new Date();
+  const streak = Math.max(0, Math.floor((now.getTime() - new Date(t.started_at).getTime()) / 1000));
+  must(await ctx.supabase.from('tracker_resets').insert({ tracker_id: id, user_id: ctx.userId, streak_seconds: streak, reset_at: now.toISOString() }));
+  must(await ctx.supabase.from('trackers').update({ started_at: now.toISOString(), best_seconds: Math.max(t.best_seconds, streak) }).eq('id', id));
+  done();
+}
+
+export async function deleteTracker(id: string) {
+  const ctx = await getCtx();
+  must(await ctx.supabase.from('trackers').delete().eq('id', id));
+  done();
+}

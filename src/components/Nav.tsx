@@ -8,6 +8,7 @@ const ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: '/', label: 'Сьогодні', icon: 'sun' },
   { href: '/goals', label: 'Цілі 2027', icon: 'target' },
   { href: '/levels', label: 'Рівні', icon: 'stairs' },
+  { href: '/trackers', label: 'Трекери', icon: 'flame' },
   { href: '/journal', label: 'Думки', icon: 'pen' },
 ];
 
@@ -36,7 +37,7 @@ export function SideNav() {
 export function BottomNav() {
   const isActive = useActive();
   return (
-    <nav aria-label="Розділи" className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t border-line bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-1 lg:hidden">
+    <nav aria-label="Розділи" className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-line bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-1 lg:hidden">
       {ITEMS.map((i) => {
         const on = isActive(i.href);
         return (
